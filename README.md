@@ -11,7 +11,6 @@ Appendix includes:
 - Bounding box projection math
 - Implementation details not discussed in the main paper
 
-ROS implementation coming spring 2024. 
 
 Please email amanda.adkins4242@gmail.com with any questions! 
 

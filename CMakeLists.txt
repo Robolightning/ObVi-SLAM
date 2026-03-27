@@ -1,8 +1,12 @@
 cmake_minimum_required(VERSION 3.10)
 cmake_policy(SET CMP0074 NEW)
 
-if(POLICY CMP0167)
-    cmake_policy(SET CMP0167 NEW)
+if(MSVC)
+    if(POLICY CMP0167)
+        cmake_policy(SET CMP0167 NEW)
+    endif()
+else()
+    cmake_policy(SET CMP0148 OLD)
 endif()
 
 project(ut_vslam)
@@ -93,24 +97,32 @@ else()
 endif()
 
 # ------------------------------------------------------------------------------
-# SuiteSparse/SPQR handling (used directly in code)
+# SuiteSparse/SPQR handling
 # ------------------------------------------------------------------------------
-if(USE_ROS)
-    # On Linux with ROS, use the system FindSuiteSparse module
-    find_package(SuiteSparse REQUIRED)
-    set(SUITESPARSE_LIBRARIES ${SUITESPARSE_LIBRARIES})
-    set(SUITESPARSE_INCLUDE_DIRS ${SUITESPARSE_INCLUDE_DIRS})
-else()
-    # On Windows (and Linux without ROS), use vcpkg's SPQR config
-    find_package(SPQR CONFIG REQUIRED)
-    set(SUITESPARSE_LIBRARIES SuiteSparse::SPQR)
-    get_target_property(SUITESPARSE_INCLUDE_DIRS SuiteSparse::SPQR INTERFACE_INCLUDE_DIRECTORIES)
-endif()
+find_package(SPQR CONFIG REQUIRED)
+set(SUITESPARSE_LIBRARIES SuiteSparse::SPQR)
+get_target_property(SUITESPARSE_INCLUDE_DIRS SuiteSparse::SPQR INTERFACE_INCLUDE_DIRECTORIES)
 
 # ------------------------------------------------------------------------------
 # ROS handling
 # ------------------------------------------------------------------------------
 if(USE_ROS)
+    find_program(ROS_PKG_TOOL rospack)
+
+    if(ROS_PKG_TOOL)
+        execute_process(
+            COMMAND "${ROS_PKG_TOOL}" find roscpp
+            OUTPUT_VARIABLE ROSCPP_PKG_DIR
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+            RESULT_VARIABLE ROSCPP_FIND_RESULT
+        )
+
+        if(ROSCPP_FIND_RESULT EQUAL 0 AND ROSCPP_PKG_DIR)
+            get_filename_component(ROS_PREFIX "${ROSCPP_PKG_DIR}/../.." ABSOLUTE)
+            list(PREPEND CMAKE_PREFIX_PATH "${ROS_PREFIX}")
+        endif()
+    endif()
+
     find_package(catkin REQUIRED COMPONENTS
         roscpp
         roslib
@@ -119,12 +131,12 @@ if(USE_ROS)
         pcl_conversions
         pcl_ros
     )
-    set(ROS_LIBS ${catkin_LIBRARIES} amrl_shared_lib)
-    add_definitions(-DUSE_ROS)
 
-    # ROS-specific include and source directories
-    set(ROS_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/ros/include)
+    set(ROS_LIBS ${catkin_LIBRARIES} amrl_shared_lib)
+    set(ROS_INCLUDE_DIRS ${catkin_INCLUDE_DIRS} ${PROJECT_SOURCE_DIR}/ros/include)
     file(GLOB_RECURSE ROS_SOURCES "${PROJECT_SOURCE_DIR}/ros/src/*.cpp")
+
+    add_definitions(-DUSE_ROS)
 else()
     set(ROS_LIBS "")
     set(ROS_INCLUDE_DIRS "")
@@ -247,15 +259,15 @@ if(USE_ROS)
         elseif(exec STREQUAL "test_det_call")
             set(src_file ${PROJECT_SOURCE_DIR}/ros/src/testing/test_obj_det_service.cpp)
         elseif(exec STREQUAL "interpolate_poses_with_required_nodes")
-            set(src_file ${PROJECT_SOURCE_DIR}/ros/src/evaluation/interpolate_poses_with_required_nodes.cpp)
+            set(src_file ${PROJECT_SOURCE_DIR}/src/evaluation/interpolate_poses_with_required_nodes.cpp)
         elseif(exec STREQUAL "oa_slam_data_generator")
             set(src_file ${PROJECT_SOURCE_DIR}/ros/src/evaluation/oa_slam/oa_slam_data_generator.cpp)
         elseif(exec STREQUAL "trajectory_metrics_generator")
-            set(src_file ${PROJECT_SOURCE_DIR}/ros/src/evaluation/trajectory_metrics_generator.cpp)
+            set(src_file ${PROJECT_SOURCE_DIR}/src/evaluation/trajectory_metrics_generator.cpp)
         elseif(exec STREQUAL "object_metrics_generator")
-            set(src_file ${PROJECT_SOURCE_DIR}/ros/src/evaluation/object_metrics_generator.cpp)
+            set(src_file ${PROJECT_SOURCE_DIR}/src/evaluation/object_metrics_generator.cpp)
         elseif(exec STREQUAL "utvslam_out_to_poses_by_timestamp")
-            set(src_file ${PROJECT_SOURCE_DIR}/ros/src/evaluation/trajectory_formatting/utvslam_out_to_poses_by_timestamp.cpp)
+            set(src_file ${PROJECT_SOURCE_DIR}/src/evaluation/trajectory_formatting/utvslam_out_to_poses_by_timestamp.cpp)
         elseif(exec STREQUAL "visualize_jacobian_problem_feats")
             set(src_file ${PROJECT_SOURCE_DIR}/ros/src/refactoring/visualize_jacobian_problem_feats.cpp)
         elseif(exec STREQUAL "debug_jacobian_hessian_diagonal")
@@ -298,9 +310,9 @@ if(USE_ROS)
     if(BUILD_TESTS)
         find_package(GTest CONFIG REQUIRED)
         add_executable(ut_vslam_tests
-            test/file_io/cv_file_storage/config_file_storage_io_tests.cpp
-            test/file_io/cv_file_storage/sequence_file_storage_io_tests.cpp
-            test/file_io/cv_file_storage/object_and_reprojection_feature_pose_graph_file_storage_io_tests.cpp
+            ros/test/file_io/cv_file_storage/config_file_storage_io_tests.cpp
+            ros/test/file_io/cv_file_storage/sequence_file_storage_io_tests.cpp
+            ros/test/file_io/cv_file_storage/object_and_reprojection_feature_pose_graph_file_storage_io_tests.cpp
         )
         target_link_libraries(ut_vslam_tests
             GTest::gtest

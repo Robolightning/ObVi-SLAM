@@ -2,12 +2,13 @@
 bin/*
 lib/*
 build/*
+out/*
 media/*
 .idea/*
+.vs/*
 cmake-build-debug/*
 cmake-build-debug-remote/*
 *__pycache__/
 *.png
 figs
 metrics_plotting_configs/*
-

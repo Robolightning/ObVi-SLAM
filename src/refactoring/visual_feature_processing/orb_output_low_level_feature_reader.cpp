@@ -6,7 +6,7 @@
 #include <glog/logging.h>
 #include <refactoring/visual_feature_processing/orb_output_low_level_feature_reader.h>
 
-#include <experimental/filesystem>
+#include <filesystem>
 
 namespace vslam_types_refactor {
 
@@ -134,10 +134,10 @@ bool OrbOutputLowLevelFeatureReader::readSingleFileFrameContentsFromDirectory(
     const std::string &directory_name,
     std::unordered_map<FrameId, FeatureObservationsForFrame>
         &single_frame_feature_observations) {
-  for (const auto &entry : std::experimental::filesystem::directory_iterator(
-           std::experimental::filesystem::path(directory_name))) {
+  for (const auto &entry : std::filesystem::directory_iterator(
+           std::filesystem::path(directory_name))) {
     const auto file_extension = entry.path().extension().string();
-    if (!std::experimental::filesystem::is_regular_file(entry) ||
+    if (!std::filesystem::is_regular_file(entry) ||
         file_extension != ".txt") {
       continue;
     }

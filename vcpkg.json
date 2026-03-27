@@ -1,0 +1,20 @@
+{
+  "name": "obvi-slam-core",
+  "version": "1.0.0",
+  "dependencies": [
+    {
+      "name": "opencv4",
+      "features": ["highgui"],
+      "default-features": false
+    },
+    "ceres",
+    "boost-filesystem",
+    "glog",
+    "gflags",
+    "yaml-cpp",
+    "suitesparse-spqr",
+    "eigen3",
+    "gtest"
+  ],
+  "builtin-baseline": "197fa8bf282e537136e4cf196af167e7f79be07b"
+}

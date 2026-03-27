@@ -319,9 +319,10 @@ bool getRankDeficiency(const ceres::Covariance::Options &cov_options,
     // more efficient, both in runtime as well as the quality of
     // ordering computed. So, it maybe worth doing that analysis
     // separately.
-    const SuiteSparse_long rank = SuiteSparseQR<double>(SPQR_ORDERING_BESTAMD,
+    const SuiteSparse_long rank = SuiteSparseQR<double, SuiteSparse_long>(
+                                                        SPQR_ORDERING_BESTAMD,
                                                         SPQR_DEFAULT_TOL,
-                                                        cholmod_jacobian.ncol,
+                                                        static_cast<SuiteSparse_long>(cholmod_jacobian.ncol),
                                                         &cholmod_jacobian,
                                                         &R,
                                                         &permutation,
@@ -338,19 +339,23 @@ bool getRankDeficiency(const ceres::Covariance::Options &cov_options,
   } else {
     LOG(INFO) << "Rank detection using eigen sparse";
 
-    typedef Eigen::SparseMatrix<double, Eigen::ColMajor> EigenSparseMatrix;
+    using RowMajorSparseMap =
+        Eigen::Map<const Eigen::SparseMatrix<double, Eigen::RowMajor, int>>;
+    using ColMajorSparseMatrix =
+        Eigen::SparseMatrix<double, Eigen::ColMajor, int>;
 
-    // Convert the matrix to column major order as required by SparseQR.
-    EigenSparseMatrix sparse_jacobian =
-        Eigen::MappedSparseMatrix<double, Eigen::RowMajor>(
-            jacobian.num_rows,
-            jacobian.num_cols,
-            static_cast<int>(jacobian.values.size()),
-            jacobian.rows.data(),
-            jacobian.cols.data(),
-            jacobian.values.data());
+    // Map Ceres CRSMatrix (row-major / CSR).
+    RowMajorSparseMap row_major_jacobian(
+        jacobian.num_rows,
+        jacobian.num_cols,
+        static_cast<int>(jacobian.values.size()),
+        jacobian.rows.data(),
+        jacobian.cols.data(),
+        jacobian.values.data());
 
-    Eigen::SparseQR<EigenSparseMatrix, Eigen::COLAMDOrdering<int>> qr_solver(
+    ColMajorSparseMatrix sparse_jacobian = row_major_jacobian;
+
+    Eigen::SparseQR<ColMajorSparseMatrix, Eigen::COLAMDOrdering<int>> qr_solver(
         sparse_jacobian);
 
     rank_deficiency = jacobian.num_cols - qr_solver.rank();

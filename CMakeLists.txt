@@ -87,7 +87,7 @@ find_package(Boost 1.70 REQUIRED COMPONENTS filesystem)
 find_package(glog REQUIRED)
 find_package(gflags REQUIRED)
 find_package(yaml-cpp REQUIRED)
-find_package(Eigen3 REQUIRED)
+find_package(Eigen3 REQUIRED NO_MODULE)
 
 # std::filesystem (for older GCC)
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9.0)
@@ -130,6 +130,7 @@ if(USE_ROS)
         cv_bridge
         pcl_conversions
         pcl_ros
+        amrl_msgs
     )
 
     set(ROS_LIBS ${catkin_LIBRARIES} amrl_shared_lib)

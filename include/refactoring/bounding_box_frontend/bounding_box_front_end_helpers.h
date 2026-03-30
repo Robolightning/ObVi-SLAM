@@ -9,7 +9,7 @@
 #include <refactoring/types/vslam_types_math_util.h>
 
 namespace vslam_types_refactor {
-std::vector<RawBoundingBox> filterBoundingBoxesWithMinConfidence(
+inline std::vector<RawBoundingBox> filterBoundingBoxesWithMinConfidence(
     const FrameId &frame_id,
     const CameraId &camera_id,
     const std::vector<RawBoundingBox> &original_bounding_boxes,
@@ -122,7 +122,7 @@ void identifyMergeCandidates(
   }
 }
 
-std::vector<AssociatedObjectIdentifier> greedilyAssignBoundingBoxes(
+inline std::vector<AssociatedObjectIdentifier> greedilyAssignBoundingBoxes(
     const std::vector<
         std::vector<std::pair<AssociatedObjectIdentifier, double>>>
         &match_candidates_with_scores,
@@ -201,7 +201,7 @@ void removeStalePendingObjects(
   }
 }
 
-double getObjectDepthGivenHeight(const BbCornerPair<double> &bb,
+inline double getObjectDepthGivenHeight(const BbCornerPair<double> &bb,
                                  const double &height,
                                  const double &fy) {
   double y_diff = bb.second.y() - bb.first.y();

@@ -179,6 +179,7 @@ set(UT_VSLAM_SOURCES
     src/refactoring/types/vslam_obj_opt_types_refactor.cpp
     src/refactoring/visual_feature_processing/orb_output_low_level_feature_reader.cpp
     src/types/timestamped_data_to_frames_utils.cpp
+    src/shared/util/timer.cc
 )
 
 # Add ROS sources if enabled

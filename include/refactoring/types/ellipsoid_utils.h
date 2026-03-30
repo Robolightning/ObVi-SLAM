@@ -219,9 +219,9 @@ bool getCornerLocationsVectorRectified(
   Eigen::AngleAxis<T> obj_axis_angle =
       Eigen::AngleAxis<T>(ellipsoid[3], Eigen::Matrix<T, 3, 1>::UnitZ());
 #else
-  const Eigen::Matrix<T, 3, 1> rotation_axis(
-      ellipsoid_data[3], ellipsoid_data[4], ellipsoid_data[5]);
-  Eigen::AngleAxis<T> axis_angle = VectorToAxisAngle(rotation_axis);
+  const Eigen::Matrix<T, 3, 1> ellipsoid_rotation_axis(
+      ellipsoid[3], ellipsoid[4], ellipsoid[5]);
+  Eigen::AngleAxis<T> obj_axis_angle = VectorToAxisAngle(ellipsoid_rotation_axis);
 #endif
 
   ellipsoid_pose = ellipsoid_transl * Eigen::Quaternion<T>(obj_axis_angle);

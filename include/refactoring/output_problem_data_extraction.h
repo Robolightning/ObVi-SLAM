@@ -12,7 +12,7 @@
 namespace vslam_types_refactor {
 
 // TODO can we make this generic to any object pose graph?
-void extractEllipsoidEstimates(
+inline void extractEllipsoidEstimates(
     const std::shared_ptr<
         const vslam_types_refactor::ObjectAndReprojectionFeaturePoseGraph>
         &pose_graph,
@@ -27,7 +27,7 @@ void extractEllipsoidEstimates(
 }
 
 // TODO can we make this generic to any object pose graph?
-void extractRobotPoseEstimates(
+inline void extractRobotPoseEstimates(
     const std::shared_ptr<
         const vslam_types_refactor::ObjectAndReprojectionFeaturePoseGraph>
         &pose_graph,
@@ -39,7 +39,7 @@ void extractRobotPoseEstimates(
   }
 }
 
-void extractVisualFeaturePositionEstimates(
+inline void extractVisualFeaturePositionEstimates(
     const std::shared_ptr<
         const vslam_types_refactor::ObjectAndReprojectionFeaturePoseGraph>
         &pose_graph,
@@ -47,7 +47,7 @@ void extractVisualFeaturePositionEstimates(
   pose_graph->getVisualFeatureEstimates(output_data.visual_feature_positions_);
 }
 
-void extractSpatialEstimateOnlyResults(
+inline void extractSpatialEstimateOnlyResults(
     const std::shared_ptr<
         const vslam_types_refactor::ObjectAndReprojectionFeaturePoseGraph>
         &pose_graph,
@@ -59,7 +59,7 @@ void extractSpatialEstimateOnlyResults(
 }
 
 template <typename LongTermObjectMap>
-void extractLongTermObjectMapAndResults(
+inline void extractLongTermObjectMapAndResults(
     const std::shared_ptr<
         vslam_types_refactor::ObjectAndReprojectionFeaturePoseGraph>
         &pose_graph,

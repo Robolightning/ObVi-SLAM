@@ -43,13 +43,13 @@ struct AssociatedObjectIdentifier {
   ObjectId object_id_;
 };
 
-bool operator==(const AssociatedObjectIdentifier &assoc_1,
-                const AssociatedObjectIdentifier &assoc_2) {
+inline bool operator==(const AssociatedObjectIdentifier &assoc_1,
+                       const AssociatedObjectIdentifier &assoc_2) {
   return std::make_pair(assoc_1.initialized_ellipsoid_, assoc_1.object_id_) ==
          std::make_pair(assoc_2.initialized_ellipsoid_, assoc_2.object_id_);
 }
 
-std::size_t hash_value(const AssociatedObjectIdentifier &assoc) {
+inline std::size_t hash_value(const AssociatedObjectIdentifier &assoc) {
   boost::hash<std::pair<bool, ObjectId>> hasher;
   return hasher(std::make_pair(assoc.initialized_ellipsoid_, assoc.object_id_));
 }
@@ -740,7 +740,6 @@ class KnownAssociationsOptionalEllipsoidEstBoundingBoxFrontEnd
             uninitialized_object_info_.size();
     for (size_t bb_index = 0; bb_index < bounding_boxes.size(); bb_index++) {
       RawBoundingBox bb = bounding_boxes[bb_index];
-      AssociatedObjectIdentifier identifier;
       ObjectId input_obj_id =
           ((associations_.at(frame_id)).at(camera_id)).at(bb);
       if (input_to_pg_object_id_map_.find(input_obj_id) !=

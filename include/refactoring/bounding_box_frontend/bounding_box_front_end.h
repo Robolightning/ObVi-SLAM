@@ -729,37 +729,41 @@ class KnownAssociationsOptionalEllipsoidEstBoundingBoxFrontEnd
   };
 
   virtual void getBoundingBoxAssignments(
-      const vslam_types_refactor::FrameId &frame_id,
-      const vslam_types_refactor::CameraId &camera_id,
-      const std::vector<RawBoundingBox> &bounding_boxes,
-      const RefinedBoundingBoxContextInfo &refined_bb_context,
-      const std::vector<util::EmptyStruct> &indiv_bb_contexts,
-      std::vector<AssociatedObjectIdentifier> &bounding_box_assignments) {
-    ObjectId next_new_obj_temp_id =
-        KnownAssociationsOptionalEllipsoidEstBoundingBoxFrontEnd::
-            uninitialized_object_info_.size();
+        const vslam_types_refactor::FrameId &frame_id,
+        const vslam_types_refactor::CameraId &camera_id,
+        const std::vector<RawBoundingBox> &bounding_boxes,
+        const RefinedBoundingBoxContextInfo &refined_bb_context,
+        const std::vector<util::EmptyStruct> &indiv_bb_contexts,
+        std::vector<AssociatedObjectIdentifier> &bounding_box_assignments)
+        override {
+    ObjectId next_new_obj_temp_id = this->uninitialized_object_info_.size();
+
     for (size_t bb_index = 0; bb_index < bounding_boxes.size(); bb_index++) {
-      RawBoundingBox bb = bounding_boxes[bb_index];
-      ObjectId input_obj_id =
-          ((associations_.at(frame_id)).at(camera_id)).at(bb);
-      if (input_to_pg_object_id_map_.find(input_obj_id) !=
-          input_to_pg_object_id_map_.end()) {
+        RawBoundingBox bb = bounding_boxes[bb_index];
+        ObjectId input_obj_id =
+            ((associations_.at(frame_id)).at(camera_id)).at(bb);
+
+        AssociatedObjectIdentifier identifier{};
+
+        if (input_to_pg_object_id_map_.find(input_obj_id) !=
+            input_to_pg_object_id_map_.end()) {
         identifier.initialized_ellipsoid_ = true;
         identifier.object_id_ = input_to_pg_object_id_map_.at(input_obj_id);
-      } else {
+        } else {
         identifier.initialized_ellipsoid_ = false;
         if (curr_frame_input_obj_id_to_uninit_index_.find(input_obj_id) !=
             curr_frame_input_obj_id_to_uninit_index_.end()) {
-          identifier.object_id_ =
-              curr_frame_input_obj_id_to_uninit_index_.at(input_obj_id);
+            identifier.object_id_ =
+                curr_frame_input_obj_id_to_uninit_index_.at(input_obj_id);
         } else {
-          identifier.object_id_ = next_new_obj_temp_id;
-          next_new_obj_temp_id++;
+            identifier.object_id_ = next_new_obj_temp_id;
+            next_new_obj_temp_id++;
         }
-      }
-      bounding_box_assignments.emplace_back(identifier);
+        }
+
+        bounding_box_assignments.emplace_back(identifier);
     }
-  }
+    }
 
   virtual RefinedBoundingBoxContextInfo generateRefinedBbContextInfo(
       const RawBoundingBoxContextInfo &bb_context,

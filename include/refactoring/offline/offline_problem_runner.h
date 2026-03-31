@@ -12,6 +12,7 @@
 #include <refactoring/optimization/object_pose_graph.h>
 #include <refactoring/optimization/object_pose_graph_optimizer.h>
 #include <refactoring/optimization/pose_graph_plus_objects_optimizer.h>
+#include <refactoring/types/vslam_types_math_util.h>
 
 namespace vslam_types_refactor {
 
@@ -40,13 +41,13 @@ class OfflineProblemRunner {
       const std::function<bool()> &continue_opt_checker,
       const std::function<FrameId(const FrameId &)> &window_provider_func,
       const std::function<
-          bool(const std::pair<vslam_types_refactor::FactorType,
-                               vslam_types_refactor::FeatureFactorId> &,
+          bool(const std::pair<FactorType,
+                               FeatureFactorId> &,
                const std::shared_ptr<PoseGraphType> &,
                const CachedFactorInfo &)> &refresh_residual_checker,
       const std::function<bool(
-          const std::pair<vslam_types_refactor::FactorType,
-                          vslam_types_refactor::FeatureFactorId> &,
+          const std::pair<FactorType,
+                          FeatureFactorId> &,
           const pose_graph_optimization::ObjectVisualPoseGraphResidualParams &,
           const std::shared_ptr<PoseGraphType> &,
           ceres::Problem *,
@@ -101,7 +102,7 @@ class OfflineProblemRunner {
       const InputProblemData &problem_data,
       const pose_graph_optimizer::OptimizationFactorsEnabledParams
           &optimization_factors_enabled_params,
-      std::optional<vslam_types_refactor::OptimizationLogger> &opt_logger,
+      std::optional<OptimizationLogger> &opt_logger,
       OutputProblemData &output_problem_data,
       const FrameId &start_at_frame = 0,
       const bool &add_data_for_starting_frame = true) {
@@ -181,6 +182,10 @@ class OfflineProblemRunner {
               .get());
 #endif
       if (!continue_opt_checker_) {
+        LOG(ERROR) << "continue_opt_checker callback is not set";
+        return false;
+      }
+      if (!continue_opt_checker_()) {
         LOG(WARNING)
             << "Halted optimization due to continue checker reporting false";
         return false;
@@ -284,8 +289,8 @@ class OfflineProblemRunner {
   std::function<bool()> continue_opt_checker_;
   std::function<FrameId(const FrameId &)> window_provider_func_;
   std::function<bool(
-      const std::pair<vslam_types_refactor::FactorType,
-                      vslam_types_refactor::FeatureFactorId> &,
+      const std::pair<FactorType,
+                      FeatureFactorId> &,
       const pose_graph_optimization::ObjectVisualPoseGraphResidualParams &,
       const std::shared_ptr<PoseGraphType> &,
       ceres::Problem *,
@@ -360,7 +365,7 @@ class OfflineProblemRunner {
         continue;
       }
       Pose3D<double> prev_robot_pose =
-          convertToPose3D(prev_raw_robot_pose.value());
+        convertToPose3D(prev_raw_robot_pose.value());
       Pose3D<double> robot_pose = convertToPose3D(raw_robot_pose.value());
       Pose3D<double> relative_pose =
           getPose2RelativeToPose1(prev_robot_pose, robot_pose);
@@ -382,7 +387,7 @@ class OfflineProblemRunner {
       const pose_graph_optimizer::OptimizationScopeParams
           &optimization_scope_params,
       const FrameId &max_frame_id,
-      std::optional<vslam_types_refactor::OptimizationLogger> &opt_logger,
+      std::optional<OptimizationLogger> &opt_logger,
       std::shared_ptr<PoseGraphType> &pose_graph,
       ceres::Problem &problem,
       const int &attempt_num = 0) {
@@ -497,17 +502,21 @@ class OfflineProblemRunner {
           }
 
           LOG(INFO) << "Running PGO+objs";
-          runPgoPlusEllipsoids(next_frame_id,
-                               residual_creator_,
-                               optimization_scope_params,
-                               ceres_callbacks,
-                               residual_params_,
-                               pgo_solver_params_,
-                               {},
-                               next_frame_id == max_frame_id,
-                               opt_logger,
-                               pose_graph,
-                               attempt_num);
+          if (!runPgoPlusEllipsoids(next_frame_id,
+                                    residual_creator_,
+                                    optimization_scope_params,
+                                    ceres_callbacks,
+                                    residual_params_,
+                                    pgo_solver_params_,
+                                    {},
+                                    next_frame_id == max_frame_id,
+                                    opt_logger,
+                                    pose_graph,
+                                    attempt_num)) {
+            LOG(ERROR) << "PGO + objects optimization failed at frame "
+                       << next_frame_id;
+            return false;
+          }
         }
         visualization_callback_(
             problem_data,
@@ -543,8 +552,8 @@ class OfflineProblemRunner {
         // Phase I
         LOG(INFO) << "Building optimization";
         std::unordered_map<ceres::ResidualBlockId,
-                           std::pair<vslam_types_refactor::FactorType,
-                                     vslam_types_refactor::FeatureFactorId>>
+                           std::pair<FactorType,
+                                     FeatureFactorId>>
             current_residual_block_info;
         {
 #ifdef RUN_TIMERS
@@ -668,7 +677,7 @@ class OfflineProblemRunner {
         }
 
         // If two-phase optim is enabled, compute outliers based on residuals
-        std::unordered_map<vslam_types_refactor::FactorType,
+        std::unordered_map<FactorType,
                            std::unordered_map<ceres::ResidualBlockId, double>>
             factor_types_and_residual_info;
         if (visual_feature_opt_enable_two_phase) {
@@ -698,7 +707,7 @@ class OfflineProblemRunner {
             if (current_residual_block_info.at(block_id).first ==
                 kReprojectionErrorFactorTypeId) {
               residual_block_size = 2;
-              // vslam_types_refactor::ReprojectionErrorFactor factor;
+              // ReprojectionErrorFactor factor;
               // pose_graph->getVisualFactor(
               //     current_residual_block_info.at(block_id).second, factor);
             } else if (current_residual_block_info.at(block_id).first ==
@@ -922,13 +931,13 @@ class OfflineProblemRunner {
           &optimization_factors_enabled_params,
       const pose_graph_optimizer::OptimizationScopeParams
           &optimization_scope_params,
-      std::optional<vslam_types_refactor::OptimizationLogger> &opt_logger,
+      std::optional<OptimizationLogger> &opt_logger,
       std::shared_ptr<PoseGraphType> &pose_graph) {
 #ifdef RUN_TIMERS
     CumulativeFunctionTimer::Invocation invoc(
-        vslam_types_refactor::CumulativeTimerFactory::getInstance()
+        CumulativeTimerFactory::getInstance()
             .getOrCreateFunctionTimer(
-                vslam_types_refactor::kTimerNamePostSessionMapMerge)
+                kTimerNamePostSessionMapMerge)
             .get());
 #endif
 

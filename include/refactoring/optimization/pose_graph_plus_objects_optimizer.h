@@ -10,6 +10,7 @@
 #include <refactoring/factors/relative_pose_factor_utils.h>
 #include <refactoring/optimization/object_pose_graph.h>
 #include <refactoring/optimization/object_pose_graph_optimizer.h>
+#include <refactoring/types/vslam_types_math_util.h>
 
 namespace vslam_types_refactor {
 
@@ -24,8 +25,8 @@ template <typename PoseGraphType, typename CachedFactorInfo>
 bool runPgoPlusEllipsoids(
     const FrameId &max_frame_id,
     const std::function<bool(
-        const std::pair<vslam_types_refactor::FactorType,
-                        vslam_types_refactor::FeatureFactorId> &,
+        const std::pair<FactorType,
+                        FeatureFactorId> &,
         const pose_graph_optimization::ObjectVisualPoseGraphResidualParams &,
         const std::shared_ptr<PoseGraphType> &,
         ceres::Problem *,
@@ -42,7 +43,7 @@ bool runPgoPlusEllipsoids(
     const std::vector<RelativePoseFactorInfoWithFrames>
         &non_local_relative_pose_factors,  // Loop closure
     const bool &final_run,
-    std::optional<vslam_types_refactor::OptimizationLogger> &opt_logger,
+    std::optional<OptimizationLogger> &opt_logger,
     std::shared_ptr<PoseGraphType> &pose_graph,
     const int &attempt_num = 0) {
   bool for_map_merge = attempt_num != 0;
@@ -60,13 +61,13 @@ bool runPgoPlusEllipsoids(
   // Create new optimizer with ellipsoid factors only (use_visual_features =
   // false) Have relative pose factors already in problem
   std::function<bool(
-      const std::pair<vslam_types_refactor::FactorType,
-                      vslam_types_refactor::FeatureFactorId> &,
+      const std::pair<FactorType,
+                      FeatureFactorId> &,
       const std::shared_ptr<ObjectAndReprojectionFeaturePoseGraph> &,
       const util::EmptyStruct &)>
       refresh_residual_checker =
-          [](const std::pair<vslam_types_refactor::FactorType,
-                             vslam_types_refactor::FeatureFactorId> &,
+          [](const std::pair<FactorType,
+                             FeatureFactorId> &,
              const std::shared_ptr<ObjectAndReprojectionFeaturePoseGraph> &,
              const util::EmptyStruct &) { return true; };
 
@@ -191,8 +192,8 @@ bool runPgoPlusEllipsoids(
           }
           relative_positions_from_first[visual_feat.first] = std::make_pair(
               first_obs,
-              getPositionRelativeToPose(robot_pose_estimates[first_obs],
-                                        visual_feat.second));
+              getPositionRelativeToPose(
+                  robot_pose_estimates[first_obs], visual_feat.second));
         }
       }
     }
@@ -276,9 +277,11 @@ bool runPgoPlusEllipsoids(
                    << "; not adjusting feature " << feat.first;
         continue;
       }
-      Position3d<double> new_position = combinePoseAndPosition(
-          robot_pose_estimates.at(first_obs_info.first), first_obs_info.second);
-      feat.second.updateVisualPositionParams(new_position);
+      Position3d<double> new_position =
+        combinePoseAndPosition(
+            robot_pose_estimates.at(first_obs_info.first),
+            first_obs_info.second);
+    feat.second.updateVisualPositionParams(new_position);
     }
   }
   if (pgo_solver_params.enable_visual_feats_only_opt_post_pgo_) {
